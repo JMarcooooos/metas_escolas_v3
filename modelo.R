@@ -15,9 +15,6 @@ if (file.exists(arquivo_dados)) {
   stop("Parando execução pois os dados não foram encontrados.")
 }
 
-
-load("dados_longit.RData")
-
 # GEMINI
 
 library(brms)
