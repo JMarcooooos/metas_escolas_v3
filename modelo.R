@@ -74,7 +74,7 @@ modelo_me_brms <- brm(
   formula = bf_lp + bf_mt + set_rescor(TRUE),
   data = df_modelo,
   family = gaussian(),
-  
+  prior = prior(lkj(2), class = cor),
   # --- Configurações de Backend e Performance ---
   backend = backend_opt,
   chains = n_chains,
