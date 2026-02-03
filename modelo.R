@@ -1,4 +1,22 @@
-load(dados_longit.RData)
+# 1. Imprime onde o R acha que está (para debug no log)
+print(paste("Diretório de trabalho atual:", getwd()))
+
+# 2. Verifica se o arquivo existe antes de tentar carregar
+arquivo_dados <- "dados_longit.RData" # <--- VERIFIQUE A ESCRITA AQUI EXATAMENTE IGUAL AO GITHUB
+
+if (file.exists(arquivo_dados)) {
+  print(paste("Arquivo encontrado! Carregando:", arquivo_dados))
+  load(arquivo_dados)
+} else {
+  # Se não achou, lista o que tem na pasta para te ajudar a descobrir o erro
+  print("ERRO CRÍTICO: Arquivo não encontrado.")
+  print("Arquivos disponíveis nesta pasta:")
+  print(list.files())
+  stop("Parando execução pois os dados não foram encontrados.")
+}
+
+
+load("dados_longit.RData")
 
 # GEMINI
 
@@ -69,7 +87,8 @@ modelo_me_brms <- brm(
   # --- Configurações de Amostragem ---
   iter = 2000,
   warmup = 1000,
-  
+  refresh = 250,  # Imprime no log a cada 250 iterações
+  silent = 0,     # Garante que não vai silenciar (0 = verboso)
   # Aumentar o adapt_delta é vital para modelos com 'me()', pois a geometria é complexa
   control = list(adapt_delta = 0.95, max_treedepth = 12),
   
