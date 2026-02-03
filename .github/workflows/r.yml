@@ -1,42 +1,60 @@
 name: Rodar Modelo BRMS
 
 on:
-  workflow_dispatch: # Permite disparar manualmente (botão no GitHub)
+  workflow_dispatch: # Botão para rodar manualmente
 
 jobs:
   brms-computation:
     runs-on: ubuntu-latest
     
-    # Variáveis de ambiente para o R
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
       R_KEEP_PKG_SOURCE: yes
 
     steps:
+      # 1. Baixa o código
       - name: Checkout do Repositório
         uses: actions/checkout@v4
 
-      - name: Configurar R (Com Binários Rápidos)
+      # 2. Configura o R com Binários Rápidos (RSPM)
+      - name: Configurar R
         uses: r-lib/actions/setup-r@v2
         with:
-          use-public-rspm: true # CRUCIAL: Instala pacotes compilados (muito mais rápido)
+          use-public-rspm: true
 
-      # Instala dependências do sistema necessárias para o brms/stan
-      - name: Instalar Dependências do Sistema
-        run: sudo apt-get install -y libv8-dev libcurl4-openssl-dev
+      # 3. Instala Bibliotecas do Linux necessárias para Tidyverse e BRMS
+      # Adicionei libxml2-dev que é essencial para o Tidyverse
+      - name: Instalar Dependências do Sistema (Linux)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxml2-dev \
+            libv8-dev \
+            libcurl4-openssl-dev \
+            libssl-dev \
+            libharfbuzz-dev \
+            libfribidi-dev \
+            libfontconfig1-dev \
+            libfreetype6-dev \
+            libpng-dev \
+            libtiff5-dev \
+            libjpeg-dev \
+            make \
+            gcc \
+            g++
 
-      # Cache dos pacotes R para não instalar tudo de novo na próxima
-      - name: Instalar Pacotes R
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          packages: |
-            any::tidyverse
-            any::brms
-            any::cmdstanr
-            any::posterior
-          cache-version: 2
+      # 4. Instalação Manual dos Pacotes R
+      # Primeiro o cmdstanr (repo específico), depois brms e tidyverse (CRAN)
+      - name: Instalar Tidyverse, BRMS e CmdStanR
+        run: |
+          # Define o repositório do Stan para pegar o cmdstanr
+          install.packages("cmdstanr", repos = c("https://mc-stan.org/r-packages/", getOption("repos")))
+          
+          # Instala tidyverse e brms aproveitando os binários do RSPM
+          install.packages(c("tidyverse", "brms", "posterior"), Ncpus = 2)
+        shell: Rscript {0}
 
-      # Cache do CmdStan (O backend C++ do Stan)
+      # 5. Cache do Compilador Stan (Para acelerar as próximas vezes)
       - name: Cache CmdStan
         id: cache-cmdstan
         uses: actions/cache@v4
@@ -44,8 +62,8 @@ jobs:
           path: ~/.cmdstan
           key: ${{ runner.os }}-cmdstan-2.34.1
 
-      # Instala CmdStan apenas se não estiver no cache
-      - name: Instalar CmdStan
+      # 6. Instala o Compilador CmdStan (Se não estiver no cache)
+      - name: Instalar Backend CmdStan
         if: steps.cache-cmdstan.outputs.cache-hit != 'true'
         run: |
           library(cmdstanr)
@@ -53,11 +71,11 @@ jobs:
           install_cmdstan(cores = 2)
         shell: Rscript {0}
 
-      # Roda o seu script
+      # 7. Executa seu script
       - name: Executar Modelo
         run: Rscript modelo.R
 
-      # Salva o resultado (.rds) para você baixar depois
+      # 8. Salva o resultado
       - name: Upload do Modelo Treinado
         uses: actions/upload-artifact@v4
         with:
