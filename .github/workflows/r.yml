@@ -23,7 +23,7 @@ jobs:
 
       # Instala dependências do sistema necessárias para o brms/stan
       - name: Instalar Dependências do Sistema
-        run: sudo apt-get install -y libv8-dev li curl
+        run: sudo apt-get install -y libv8-dev libcurl4-openssl-dev
 
       # Cache dos pacotes R para não instalar tudo de novo na próxima
       - name: Instalar Pacotes R
