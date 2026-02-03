@@ -1,0 +1,65 @@
+name: Rodar Modelo BRMS
+
+on:
+  workflow_dispatch: # Permite disparar manualmente (botão no GitHub)
+
+jobs:
+  brms-computation:
+    runs-on: ubuntu-latest
+    
+    # Variáveis de ambiente para o R
+    env:
+      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+      R_KEEP_PKG_SOURCE: yes
+
+    steps:
+      - name: Checkout do Repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar R (Com Binários Rápidos)
+        uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true # CRUCIAL: Instala pacotes compilados (muito mais rápido)
+
+      # Instala dependências do sistema necessárias para o brms/stan
+      - name: Instalar Dependências do Sistema
+        run: sudo apt-get install -y libv8-dev li curl
+
+      # Cache dos pacotes R para não instalar tudo de novo na próxima
+      - name: Instalar Pacotes R
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          packages: |
+            any::tidyverse
+            any::brms
+            any::cmdstanr
+            any::posterior
+          cache-version: 2
+
+      # Cache do CmdStan (O backend C++ do Stan)
+      - name: Cache CmdStan
+        id: cache-cmdstan
+        uses: actions/cache@v4
+        with:
+          path: ~/.cmdstan
+          key: ${{ runner.os }}-cmdstan-2.34.1
+
+      # Instala CmdStan apenas se não estiver no cache
+      - name: Instalar CmdStan
+        if: steps.cache-cmdstan.outputs.cache-hit != 'true'
+        run: |
+          library(cmdstanr)
+          check_cmdstan_toolchain()
+          install_cmdstan(cores = 2)
+        shell: Rscript {0}
+
+      # Roda o seu script
+      - name: Executar Modelo
+        run: Rscript modelo.R
+
+      # Salva o resultado (.rds) para você baixar depois
+      - name: Upload do Modelo Treinado
+        uses: actions/upload-artifact@v4
+        with:
+          name: modelo-final
+          path: modelo_saeb_saego_me_v1.rds
