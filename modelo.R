@@ -29,6 +29,30 @@ bf_mt <- bf(
     (1 |q| CD_REGIONAL)
 )
 
+
+is_github <- Sys.getenv("GITHUB_ACTIONS") == "true"
+
+# Configuração Dinâmica
+if (is_github) {
+  # CONFIGURAÇÃO SEGURA PARA GITHUB ACTIONS (FREE TIER)
+  # A máquina tem 2 vCPUs. Não podemos usar threading agressivo.
+  n_chains  <- 4
+  n_cores   <- 2 # Roda 2 cadeias por vez (serializado)
+  n_threads <- 1 # Sem threading intra-chain para economizar RAM
+  backend_opt <- "cmdstanr"
+  msg <- "Rodando modo GitHub (Recursos Limitados)"
+} else {
+  # SUA CONFIGURAÇÃO POTENTE LOCAL
+  n_chains  <- 4
+  n_cores   <- 4
+  n_threads <- 2
+  backend_opt <- "cmdstanr"
+  msg <- "Rodando modo Local (Full Power)"
+}
+
+print(msg)
+
+
 # 4. Rodando o Modelo
 modelo_me_brms <- brm(
   formula = bf_lp + bf_mt + set_rescor(TRUE),
@@ -36,10 +60,10 @@ modelo_me_brms <- brm(
   family = gaussian(),
   
   # --- Configurações de Backend e Performance ---
-  backend = "cmdstanr",
-  threads = threading(2), # Habilita Within-chain parallelization
-  chains = 4,
-  cores = 4, # O brms usa 'cores' para rodar as cadeias em paralelo
+  backend = backend_opt,
+  chains = n_chains,
+  cores = n_cores, 
+  threads = threading(n_threads),
   
   # --- Configurações de Amostragem ---
   iter = 2000,
