@@ -1,7 +1,9 @@
 name: Rodar Modelo BRMS
 
 on:
-  workflow_dispatch: # Botão para rodar manualmente
+  push:
+    branches: [ "main" ]
+
 
 jobs:
   brms-computation:
