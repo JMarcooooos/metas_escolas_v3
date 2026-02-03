@@ -3,6 +3,7 @@ load(dados_longit.RData)
 # GEMINI
 
 library(brms)
+library(tidyverse)
 
 # Supondo que seu dataframe se chama 'df_completo'
 
