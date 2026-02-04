@@ -74,6 +74,8 @@ modelo_me_brms_t <- brm(
   iter = 2000,
   warmup = 1000,
   control = list(adapt_delta = 0.98, max_treedepth = 15),
+  thin = 5,
+  save_pars = save_pars(all = FALSE),
   file = "modelo_saeb_saego_me_v2" 
 )
 
